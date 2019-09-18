@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/irasekh3/fuego.svg?branch=inital_dev)](https://travis-ci.org/irasekh3/fuego)
-[![Coverage Status](https://coveralls.io/repos/github/irasekh3/fuego/badge.svg?branch=inital_dev)](https://coveralls.io/github/irasekh3/fuego?branch=inital_dev)
+[![Build Status](https://travis-ci.org/irasekh3/fuego.svg?branch=master)](https://travis-ci.org/irasekh3/fuego)
+[![Coverage Status](https://coveralls.io/repos/github/irasekh3/fuego/badge.svg?branch=master)](https://coveralls.io/github/irasekh3/fuego?branch=master)
 
 # Fuego
 Fuego is a library for automatically generating command line interfaces (CLIs) from golang functions and structs
