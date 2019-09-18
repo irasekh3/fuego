@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -35,6 +37,39 @@ func Fuego(targets interface{}) ([]reflect.Value, error) {
 	err := errors.Errorf(UnsupportedTargetTypeError, targetType.Kind())
 	printError(err)
 	return nil, err
+}
+
+func fuegoFunc(target interface{}, args []string) ([]reflect.Value, error) {
+	targetVal := reflect.ValueOf(target)
+	targetFuncName := runtime.FuncForPC(targetVal.Pointer()).Name()
+	targetFuncName = targetFuncName[strings.LastIndex(targetFuncName, ".")+1:]
+	// targetFuncParamCount := targetVal.Type().NumIn()
+
+	targetFuncParamCount := targetVal.Type().NumIn()
+
+	if len(args)-1 < targetFuncParamCount {
+		return nil, errors.Errorf(InsufficientArgumentsError)
+	}
+
+	var funcParams []reflect.Value
+	var err error
+
+	if targetFuncParamCount > 0 {
+		targetValKind := make([]reflect.Kind, targetFuncParamCount)
+
+		for x := 0; x < targetFuncParamCount; x++ {
+			// parameterVal := reflect.ValueOf(args[x])
+			targetValKind[x] = targetVal.Type().In(x).Kind()
+		}
+
+		funcParams, err = setupFunctionParameterValues(targetValKind, args[1:])
+		if err != nil {
+			return nil, errors.Wrap(err, ParameterListGenerationError)
+		}
+	}
+
+	returnVals := targetVal.Call(funcParams)
+	return returnVals, nil
 }
 
 func printValues(values []reflect.Value) {
