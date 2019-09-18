@@ -60,3 +60,8 @@ func fuegoPrintWrapper(values []reflect.Value, err error) ([]reflect.Value, erro
 	}
 	return values, err
 }
+
+func setupFunctionParameterValues(targetValueKindSlice []reflect.Kind, args []string) ([]reflect.Value, error) {
+
+	return nil, errors.New("not yet implemented")
+}

@@ -6,9 +6,11 @@
 package fuego
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -131,6 +133,56 @@ func TestFuego(t *testing.T) {
 		})
 	}
 
+}
+
+func TestSetupFunctionParameterValues(t *testing.T) {
+	successArgs := []string{
+		strconv.FormatInt(-1, 10),
+		strconv.FormatInt(-2, 10),
+		strconv.FormatInt(-3, 10),
+		strconv.FormatInt(-4, 10),
+		strconv.FormatInt(-5, 10),
+		strconv.FormatUint(uint64(1), 10),
+		strconv.FormatUint(uint64(2), 10),
+		strconv.FormatUint(uint64(3), 10),
+		strconv.FormatUint(uint64(4), 10),
+		strconv.FormatUint(uint64(5), 10),
+		strconv.FormatFloat(3.14159265359, 'f', -1, 32),
+		fmt.Sprintf("%f", 3.14159265359),
+		strconv.FormatBool(true),
+		"hi",
+	}
+	successKind := []reflect.Kind{
+		reflect.Int,
+		reflect.Int8,
+		reflect.Int16,
+		reflect.Int32,
+		reflect.Int64,
+		reflect.Uint,
+		reflect.Uint8,
+		reflect.Uint16,
+		reflect.Uint32,
+		reflect.Uint64,
+		reflect.Float32,
+		reflect.Float64,
+		reflect.Bool,
+		reflect.String,
+	}
+
+	if _, err := setupFunctionParameterValues(successKind, successArgs); err != nil {
+		t.Errorf(err.Error())
+	}
+
+	for _, kind := range successKind {
+		if kind != reflect.String {
+			val, err := setupFunctionParameterValues([]reflect.Kind{kind}, []string{"This Should Fail"})
+			if err == nil {
+				t.Errorf("the string was parsed to \"%v\" with the value of \"%v\"", kind, val[0].Interface())
+			} else if !doErrorsMatch(errors.New(CannotConvertToDesiredValueTypeError), err) {
+				t.Errorf("Expected to receive the first error but instead the second error was returned: \n\t1) \"%v\"\n\t2) \"%v\"", CannotConvertToDesiredValueTypeError, err)
+			}
+		}
+	}
 }
 
 /* Test Help Functions */
