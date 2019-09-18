@@ -32,11 +32,21 @@ var (
 // Fuego handles the parsing of potential targets to call
 // and then reflectively calls the function with all necessary params
 func Fuego(targets interface{}) ([]reflect.Value, error) {
+	osArgs := os.Args
 	targetType := reflect.TypeOf(targets)
 
-	err := errors.Errorf(UnsupportedTargetTypeError, targetType.Kind())
-	printError(err)
-	return nil, err
+	switch targetType.Kind() {
+	case reflect.Func:
+		return fuegoPrintWrapper(fuegoFunc(targets, osArgs))
+	case reflect.Struct:
+		fallthrough
+	case reflect.Array, reflect.Slice:
+		fallthrough
+	default:
+		err := errors.Errorf(UnsupportedTargetTypeError, targetType.Kind())
+		printError(err)
+		return nil, err
+	}
 }
 
 func fuegoFunc(target interface{}, args []string) ([]reflect.Value, error) {
