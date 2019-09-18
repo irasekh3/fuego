@@ -89,9 +89,19 @@ var (
 			errors.Errorf("%v", UnsupportedTargetTypeError),
 		},
 		{
-			"StructAdd.Success",
+			"StructAdd1.Success",
 			MyMath{Offset: 0},
 			[]string{"Fuego.StructAdd.Success", "MyMath.Add", "5", "3"},
+			false,
+			false,
+			reflect.ValueOf(MyMath{Offset: 0}.Add).Type().NumOut(),
+			[]interface{}{float64(8)},
+			nil,
+		},
+		{
+			"StructAdd2.Success",
+			MyMath{Offset: 0},
+			[]string{"Fuego.StructAdd.Success", "Add", "5", "3"},
 			false,
 			false,
 			reflect.ValueOf(MyMath{Offset: 0}.Add).Type().NumOut(),
@@ -127,6 +137,17 @@ var (
 			reflect.ValueOf(MyMath{Offset: 0}.Add).Type().NumOut(),
 			nil,
 			errors.Errorf("%v: %v", ParameterListGenerationError, CannotConvertToDesiredValueTypeError),
+		},
+
+		{
+			"StructInsufficientParameterArgument.Failure",
+			MyMath{Offset: 0},
+			[]string{"Fuego.StructInsufficientParameterArgument.Failure", "MyMath.SubtractInt", "5", "3"},
+			false,
+			false,
+			reflect.ValueOf(MyMath{Offset: 0}.Add).Type().NumOut(),
+			nil,
+			errors.Errorf("%v", MethodDoesNotExistError),
 		},
 	}
 )
