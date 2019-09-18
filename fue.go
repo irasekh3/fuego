@@ -7,9 +7,11 @@ package fuego
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"reflect"
+	"strconv"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -63,5 +65,112 @@ func fuegoPrintWrapper(values []reflect.Value, err error) ([]reflect.Value, erro
 
 func setupFunctionParameterValues(targetValueKindSlice []reflect.Kind, args []string) ([]reflect.Value, error) {
 
-	return nil, errors.New("not yet implemented")
+	size := len(targetValueKindSlice)
+
+	funcParams := make([]reflect.Value, size)
+
+	for x, targetValKind := range targetValueKindSlice {
+
+		switch targetValKind {
+		case reflect.Int:
+			paramVal, err := strconv.ParseInt(args[x], 10, 0)
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(int(paramVal))
+
+		case reflect.Int8:
+			paramVal, err := strconv.ParseInt(args[x], 10, 8)
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(int8(paramVal))
+
+		case reflect.Int16:
+			paramVal, err := strconv.ParseInt(args[x], 10, 16)
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(int16(paramVal))
+
+		case reflect.Int32:
+			paramVal, err := strconv.ParseInt(args[x], 10, 32)
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(int32(paramVal))
+
+		case reflect.Int64:
+			paramVal, err := strconv.ParseInt(args[x], 10, 64)
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(paramVal)
+
+		case reflect.Uint:
+			paramVal, err := strconv.ParseUint(args[x], 10, 0)
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(uint(paramVal))
+
+		case reflect.Uint8:
+			paramVal, err := strconv.ParseUint(args[x], 10, 8)
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(uint8(paramVal))
+
+		case reflect.Uint16:
+			paramVal, err := strconv.ParseUint(args[x], 10, 16)
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(uint16(paramVal))
+
+		case reflect.Uint32:
+			paramVal, err := strconv.ParseUint(args[x], 10, 32)
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(uint32(paramVal))
+
+		case reflect.Uint64:
+			paramVal, err := strconv.ParseUint(args[x], 10, 64)
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(paramVal)
+
+		case reflect.Float32:
+			paramVal, err := strconv.ParseFloat(args[x], 32)
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(float32(paramVal))
+
+		case reflect.Float64:
+			paramVal, err := strconv.ParseFloat(args[x], 64)
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(paramVal)
+
+		case reflect.Bool:
+			paramVal, err := strconv.ParseBool(args[x])
+			if err != nil {
+				return nil, errors.Errorf(CannotConvertToDesiredValueTypeError, args[x], targetValKind)
+			}
+			funcParams[x] = reflect.ValueOf(paramVal)
+
+		case reflect.String:
+			funcParams[x] = reflect.ValueOf(args[x])
+
+		default:
+			return nil, errors.Errorf(UnsupportedConversionToDesiredValueTypeError, targetValKind)
+		}
+
+	}
+
+	return funcParams, nil
 }
