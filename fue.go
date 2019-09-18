@@ -42,7 +42,25 @@ func Fuego(targets interface{}) ([]reflect.Value, error) {
 	case reflect.Struct:
 		return fuegoPrintWrapper(fuegoStruct(targets, osArgs))
 	case reflect.Array, reflect.Slice:
-		fallthrough
+		if len(osArgs) < 2 {
+			return nil, errors.Errorf(InsufficientArgumentsError)
+		}
+
+		methodTitleName := strings.Title(osArgs[1])
+
+		// foreach element in the slice of targets provided, check to see if this is what was called by the cli
+		// if so call this function passing in the element as the new target
+		for _, key := range targets.([]interface{}) {
+			keyType := reflect.TypeOf(key)
+
+			if keyType.Kind() == reflect.Func && functionName(key) == methodTitleName {
+				return Fuego(key)
+			} else if keyType.Kind() == reflect.Struct && strings.HasPrefix(methodTitleName, keyType.Name()+".") {
+				return Fuego(key)
+			}
+		}
+
+		return nil, errors.Errorf(UnsupportedTargetTypeError, methodTitleName)
 	default:
 		err := errors.Errorf(UnsupportedTargetTypeError, targetType.Kind())
 		printError(err)
@@ -58,7 +76,11 @@ func fuegoFunc(target interface{}, args []string) ([]reflect.Value, error) {
 
 	targetFuncParamCount := targetVal.Type().NumIn()
 
-	if len(args)-1 < targetFuncParamCount {
+	if len(args) > 1 && args[1] == targetFuncName && len(args)-2 < targetFuncParamCount {
+		// the function name is explicitly called out but not enough params passed in
+		return nil, errors.Errorf(InsufficientArgumentsError)
+	} else if len(args) > 1 && args[1] != targetFuncName && len(args)-1 < targetFuncParamCount {
+		// the function name is not passed is and there are not enough params passed in
 		return nil, errors.Errorf(InsufficientArgumentsError)
 	}
 
@@ -73,9 +95,16 @@ func fuegoFunc(target interface{}, args []string) ([]reflect.Value, error) {
 			targetValKind[x] = targetVal.Type().In(x).Kind()
 		}
 
-		funcParams, err = setupFunctionParameterValues(targetValKind, args[1:])
-		if err != nil {
-			return nil, errors.Wrap(err, ParameterListGenerationError)
+		if len(args) > 2 && args[1] == targetFuncName {
+			funcParams, err = setupFunctionParameterValues(targetValKind, args[2:])
+			if err != nil {
+				return nil, errors.Wrap(err, ParameterListGenerationError)
+			}
+		} else if len(args) > 1 && args[1] != targetFuncName {
+			funcParams, err = setupFunctionParameterValues(targetValKind, args[1:])
+			if err != nil {
+				return nil, errors.Wrap(err, ParameterListGenerationError)
+			}
 		}
 	}
 
@@ -128,6 +157,11 @@ func fuegoStruct(target interface{}, args []string) ([]reflect.Value, error) {
 	}
 
 	return method.Call(funcParams), nil
+}
+
+func functionName(key interface{}) string {
+	funcName := runtime.FuncForPC(reflect.ValueOf(key).Pointer()).Name()
+	return funcName[strings.LastIndex(funcName, ".")+1:]
 }
 
 func printValues(values []reflect.Value) {
