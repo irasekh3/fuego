@@ -51,3 +51,12 @@ func printError(err error) {
 		os.Stderr.WriteString("Error: " + err.Error())
 	}
 }
+
+func fuegoPrintWrapper(values []reflect.Value, err error) ([]reflect.Value, error) {
+	if err != nil {
+		printError(err)
+	} else {
+		printValues(values)
+	}
+	return values, err
+}
