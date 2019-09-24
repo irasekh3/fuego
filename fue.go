@@ -39,7 +39,7 @@ func Fuego(targets interface{}) ([]reflect.Value, error) {
 	switch targetType.Kind() {
 	case reflect.Func:
 		return fuegoPrintWrapper(fuegoFunc(targets, osArgs))
-	case reflect.Struct:
+	case reflect.Ptr, reflect.Struct:
 		return fuegoPrintWrapper(fuegoStruct(targets, osArgs))
 	case reflect.Array, reflect.Slice:
 		if len(osArgs) < 2 {
@@ -56,6 +56,8 @@ func Fuego(targets interface{}) ([]reflect.Value, error) {
 			if keyType.Kind() == reflect.Func && functionName(key) == methodTitleName {
 				return Fuego(key)
 			} else if keyType.Kind() == reflect.Struct && strings.HasPrefix(methodTitleName, keyType.Name()+".") {
+				return Fuego(key)
+			} else if keyType.Kind() == reflect.Ptr && keyType.Elem().Kind() == reflect.Struct && strings.HasPrefix(methodTitleName, keyType.Elem().Name()+".") {
 				return Fuego(key)
 			}
 		}
@@ -112,16 +114,32 @@ func fuegoFunc(target interface{}, args []string) ([]reflect.Value, error) {
 }
 
 func fuegoStruct(target interface{}, args []string) ([]reflect.Value, error) {
-	targetVal := reflect.ValueOf(target)
+	targetVal := reflect.ValueOf(reflect.ValueOf(&target).Elem().Interface())
 
-	// returns <struct>
-	structName := targetVal.Type().Name()
-
-	// returns <package>.<struct>
-	// packageStructName := targetVal.Type().String()
+	structNameSplit := strings.Split(targetVal.Type().String(), ".")
+	structName := structNameSplit[len(structNameSplit)-1]
+	// structPackageName := strings.Replace(strings.Join(structNameSplit[:len(structNameSplit)-1], ""), "*", "", -1)
 
 	if len(args) < 2 {
 		return nil, errors.Errorf(InsufficientArgumentsError)
+	}
+
+	for _, arg := range args {
+		if strings.HasPrefix(arg, "--") && len(arg) > 2 {
+			arg = arg[2:]
+			argSplit := strings.Split(arg, "=")
+			attribute := targetVal.Elem().FieldByName(argSplit[0])
+
+			if attribute.CanSet() {
+				vals, err := setupFunctionParameterValues([]reflect.Kind{attribute.Kind()}, []string{argSplit[1]})
+				if err != nil {
+					// do i error out or ignore and continue and print the error - leaning to fail
+					fmt.Println(errors.Wrap(err, "the struct attribute could not be altered"))
+					continue
+				}
+				attribute.Set(vals[0])
+			}
+		}
 	}
 
 	methodName := args[1]
