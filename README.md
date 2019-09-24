@@ -8,9 +8,10 @@ Fuego is a library for automatically generating command line interfaces (CLIs) f
 
 ## Features
 * quickly run and test your functions from the command line
-* show documentation for functions and struct methods from the command line
+* show documentation for functions and struct methods from the command line (NOT YET)
 * run / test existing external library functions or just use them as a cli
 * turn external libraries into a simple CLI in as little as 4 lines
+* pass struct attribute values as CLI arguments `--<attribute>=<value>`
 
 ## Installation
 ```bash
