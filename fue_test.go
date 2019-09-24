@@ -270,6 +270,27 @@ var (
 			nil,
 			errors.New(UnsupportedTargetTypeError),
 		},
+		{
+			"StructAttributeArgument.Success",
+			[]interface{}{&(MyMath{Offset: 5})},
+			[]string{"Fuego.StructAttributeArgument.Success", "MyMath.Add", "5", "3", "--Offset=2"},
+			false,
+			false,
+			reflect.ValueOf(MyMath{Offset: 0}.Subtract).Type().NumOut(),
+			[]interface{}{float64(10)},
+			nil,
+		},
+
+		{
+			"StructAttributeInvalidTypeArgument.Success",
+			[]interface{}{&(MyMath{Offset: 5})},
+			[]string{"Fuego.StructAttributeArgument.Success", "MyMath.Add", "5", "3", "--Offset=hi"},
+			false,
+			false,
+			reflect.ValueOf(MyMath{Offset: 0}.Subtract).Type().NumOut(),
+			[]interface{}{float64(13)},
+			nil,
+		},
 	}
 )
 
