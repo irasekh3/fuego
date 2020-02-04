@@ -26,12 +26,13 @@ const (
 )
 
 var (
+	// PrintToStdOut is used to determine if results should be printed to std out. Default is true but can be set to false prior to calling Fuego()
 	PrintToStdOut = true
+	// PrintToStdErr is used to determine if errors should be printed to std err. Default is true but can be set to false prior to calling Fuego()
 	PrintToStdErr = true
 )
 
-// Fuego handles the parsing of potential targets to call
-// and then reflectively calls the function with all necessary params
+// Fuego handles the parsing of potential targets to call and then reflectively calls the function with all necessary params
 func Fuego(targets interface{}) ([]reflect.Value, error) {
 	osArgs := os.Args
 	targetType := reflect.TypeOf(targets)
@@ -70,6 +71,7 @@ func Fuego(targets interface{}) ([]reflect.Value, error) {
 	}
 }
 
+// fuegoFunc is used as a helper function for Fuego() to handle targets of type Func
 func fuegoFunc(target interface{}, args []string) ([]reflect.Value, error) {
 	targetVal := reflect.ValueOf(target)
 	targetFuncName := runtime.FuncForPC(targetVal.Pointer()).Name()
@@ -113,6 +115,7 @@ func fuegoFunc(target interface{}, args []string) ([]reflect.Value, error) {
 	return targetVal.Call(funcParams), nil
 }
 
+// fuegoStruct is used as a helper function for Fuego() to handle targets of type Struct or pointer to a Struct
 func fuegoStruct(target interface{}, args []string) ([]reflect.Value, error) {
 	targetVal := reflect.ValueOf(reflect.ValueOf(&target).Elem().Interface())
 
@@ -182,6 +185,7 @@ func functionName(key interface{}) string {
 	return funcName[strings.LastIndex(funcName, ".")+1:]
 }
 
+// printValues is used to handle printing out Reflect Values to std out if the user would like to allow it
 func printValues(values []reflect.Value) {
 	if PrintToStdOut {
 		for x, val := range values {
@@ -193,12 +197,14 @@ func printValues(values []reflect.Value) {
 	}
 }
 
+// printError is used to handle printing out an Error to std err if the user would like to allow it
 func printError(err error) {
 	if PrintToStdErr {
-		os.Stderr.WriteString("Error: " + err.Error())
+		_, _ = os.Stderr.WriteString("Error: " + err.Error())
 	}
 }
 
+// fuegoPrintWrapper is a simple wrapper function to parse the results and error that Fuego would return and print it out to std out / std err if desired
 func fuegoPrintWrapper(values []reflect.Value, err error) ([]reflect.Value, error) {
 	if err != nil {
 		printError(err)
