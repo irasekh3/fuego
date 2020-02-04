@@ -338,7 +338,7 @@ func TestFuego(t *testing.T) {
 
 }
 
-func TestSetupFunctionParameterValues(t *testing.T) {
+func TestConvertStringsToReflectValues(t *testing.T) {
 	successArgs := []string{
 		strconv.FormatInt(-1, 10),
 		strconv.FormatInt(-2, 10),
@@ -372,13 +372,13 @@ func TestSetupFunctionParameterValues(t *testing.T) {
 		reflect.String,
 	}
 
-	if _, err := setupFunctionParameterValues(successKind, successArgs); err != nil {
+	if _, err := convertStringsToReflectValues(successKind, successArgs); err != nil {
 		t.Errorf(err.Error())
 	}
 
 	for _, kind := range successKind {
 		if kind != reflect.String {
-			val, err := setupFunctionParameterValues([]reflect.Kind{kind}, []string{"This Should Fail"})
+			val, err := convertStringsToReflectValues([]reflect.Kind{kind}, []string{"This Should Fail"})
 			if err == nil {
 				t.Errorf("the string was parsed to \"%v\" with the value of \"%v\"", kind, val[0].Interface())
 			} else if !doErrorsMatch(errors.New(CannotConvertToDesiredValueTypeError), err) {

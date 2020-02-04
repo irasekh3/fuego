@@ -100,12 +100,12 @@ func fuegoFunc(target interface{}, args []string) ([]reflect.Value, error) {
 		}
 
 		if len(args) > 2 && args[1] == targetFuncName {
-			funcParams, err = setupFunctionParameterValues(targetValKind, args[2:])
+			funcParams, err = convertStringsToReflectValues(targetValKind, args[2:])
 			if err != nil {
 				return nil, errors.Wrap(err, ParameterListGenerationError)
 			}
 		} else if len(args) > 1 && args[1] != targetFuncName {
-			funcParams, err = setupFunctionParameterValues(targetValKind, args[1:])
+			funcParams, err = convertStringsToReflectValues(targetValKind, args[1:])
 			if err != nil {
 				return nil, errors.Wrap(err, ParameterListGenerationError)
 			}
@@ -134,10 +134,10 @@ func fuegoStruct(target interface{}, args []string) ([]reflect.Value, error) {
 			attribute := targetVal.Elem().FieldByName(argSplit[0])
 
 			if attribute.CanSet() {
-				vals, err := setupFunctionParameterValues([]reflect.Kind{attribute.Kind()}, []string{argSplit[1]})
+				vals, err := convertStringsToReflectValues([]reflect.Kind{attribute.Kind()}, []string{argSplit[1]})
 				if err != nil {
 					// do i error out or ignore and continue and print the error - leaning to fail
-					fmt.Println(errors.Wrap(err, "the struct attribute could not be altered"))
+					printError(errors.Wrap(err, "the struct attribute could not be altered"))
 					continue
 				}
 				attribute.Set(vals[0])
@@ -171,7 +171,7 @@ func fuegoStruct(target interface{}, args []string) ([]reflect.Value, error) {
 			targetValKind[x] = method.Type().In(x).Kind()
 		}
 
-		funcParams, err = setupFunctionParameterValues(targetValKind, args[2:])
+		funcParams, err = convertStringsToReflectValues(targetValKind, args[2:])
 		if err != nil {
 			return nil, errors.Wrap(err, ParameterListGenerationError)
 		}
@@ -214,7 +214,8 @@ func fuegoPrintWrapper(values []reflect.Value, err error) ([]reflect.Value, erro
 	return values, err
 }
 
-func setupFunctionParameterValues(targetValueKindSlice []reflect.Kind, args []string) ([]reflect.Value, error) {
+// convertStringsToReflectValues converts a list of strings to the desired reflect value so that it can be used as a parameter for a reflective call of a function or to be set as the value of a struct attribute.
+func convertStringsToReflectValues(targetValueKindSlice []reflect.Kind, args []string) ([]reflect.Value, error) {
 
 	size := len(targetValueKindSlice)
 
