@@ -291,6 +291,16 @@ var (
 			[]interface{}{float64(13)},
 			nil,
 		},
+		{
+			"GeneralHelp.Success",
+			AddInt,
+			[]string{"GeneralHelp.Success", "-h"},
+			true,
+			true,
+			0,
+			nil,
+			nil,
+		},
 	}
 )
 
