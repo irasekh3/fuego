@@ -110,7 +110,7 @@ func fuegoUsage(target interface{}, helpTarget string) {
 		targetFuncName := runtime.FuncForPC(targetVal.Pointer()).Name()
 		targetFuncName = strings.TrimSpace(targetFuncName[strings.LastIndex(targetFuncName, ".")+1:])
 
-		// validate that the user asked for help with this target function or specified no subcommand
+		// if the input requests an invalid subcommand let them know
 		if helpTarget != "" && strings.ToLower(helpTarget) != strings.ToLower(targetFuncName) {
 			fmt.Printf("%s is not an available subcommand. Here are the details for the available function.\n\n", helpTarget)
 		}
@@ -142,6 +142,37 @@ func fuegoUsage(target interface{}, helpTarget string) {
 		fmt.Println(ret)
 
 	case reflect.Ptr, reflect.Struct:
+		targetVal := reflect.ValueOf(reflect.ValueOf(&target).Elem().Interface())
+
+		structNameSplit := strings.Split(targetVal.Type().String(), ".")
+		structName := structNameSplit[len(structNameSplit)-1]
+		structPackageName := strings.Replace(strings.Join(structNameSplit[:len(structNameSplit)-1], ""), "*", "", -1)
+
+		// if the input requests an invalid subcommand let them know
+		if helpTarget != "" && strings.ToLower(structName) != strings.ToLower(helpTarget) {
+			fmt.Printf("%s is not an available subcommand. Here are the details for the available struct.\n\n", helpTarget)
+		}
+
+		// print usage for a struct
+		fmt.Println(structName + ":")
+
+		// print available methods for a struct that can be called as a subcommand
+		fmt.Printf("\t%s Methods\n", structName)
+		methodsCount := targetVal.Elem().NumMethod()
+		for x := 0; x < methodsCount; x++ {
+			structMethod := targetVal.Elem().Type().Method(x)
+			methodSig := structMethod.Type.String()
+			methodSig = strings.Replace(methodSig, "func("+structPackageName+"."+structName+", ", "(", 1)
+			fmt.Printf("\t\t%s %v\n", structMethod.Name, methodSig)
+		}
+
+		// print available fields for a struct that can be set with flags "--<field>=<value>"
+		fmt.Printf("\t%s Fields\n", structName)
+		fieldsCount := targetVal.Elem().NumField()
+		for x := 0; x < fieldsCount; x++ {
+			fmt.Printf("\t\t--%s=<%v>\n", targetVal.Elem().Type().Field(x).Name, targetVal.Elem().Type().Field(x).Type)
+		}
+
 	case reflect.Array, reflect.Slice:
 	}
 

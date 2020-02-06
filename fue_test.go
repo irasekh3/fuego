@@ -301,6 +301,16 @@ var (
 			nil,
 			nil,
 		},
+		{
+			"SubcommandStructHelp.Success",
+			&(MyMath{}),
+			[]string{"SubcommandStructHelp.Success", "MyMath", "-help"},
+			true,
+			true,
+			0,
+			nil,
+			nil,
+		},
 	}
 )
 
