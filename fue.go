@@ -33,15 +33,42 @@ var (
 )
 
 // Fuego handles the parsing of potential targets to call and then reflectively calls the function with all necessary params
-func Fuego(targets interface{}) ([]reflect.Value, error) {
+func Fuego(target interface{}) ([]reflect.Value, error) {
 	osArgs := os.Args
-	targetType := reflect.TypeOf(targets)
+
+	// If the user is trying to view the usage details for the binary or a
+	// subcommand of the binary print them and exit
+	if len(osArgs) == 2 {
+		firstArg := strings.ToLower(strings.TrimSpace(osArgs[1]))
+		if firstArg == "help" || firstArg == "--help" || firstArg == "-help" || firstArg == "-h" {
+			fuegoUsage(target, "")
+			// os.Exit(1)
+			return nil, nil
+		}
+	} else if len(osArgs) == 3 {
+		secondArg := strings.ToLower(strings.TrimSpace(osArgs[2]))
+		if secondArg == "help" || secondArg == "--help" || secondArg == "-help" || secondArg == "-h" {
+			fuegoUsage(target, osArgs[1])
+			// os.Exit(1)
+			return nil, nil
+		}
+
+	}
+
+	// Execute the command the user is trying to run against the target
+	return fuegoTarget(target)
+}
+
+// fuegoTarget actually handles the parsing of potential targets to call and then reflectively calls the function with all necessary params
+func fuegoTarget(target interface{}) ([]reflect.Value, error) {
+	osArgs := os.Args
+	targetType := reflect.TypeOf(target)
 
 	switch targetType.Kind() {
 	case reflect.Func:
-		return fuegoPrintWrapper(fuegoFunc(targets, osArgs))
+		return fuegoPrintWrapper(fuegoFunc(target, osArgs))
 	case reflect.Ptr, reflect.Struct:
-		return fuegoPrintWrapper(fuegoStruct(targets, osArgs))
+		return fuegoPrintWrapper(fuegoStruct(target, osArgs))
 	case reflect.Array, reflect.Slice:
 		if len(osArgs) < 2 {
 			return nil, errors.Errorf(InsufficientArgumentsError)
@@ -51,7 +78,7 @@ func Fuego(targets interface{}) ([]reflect.Value, error) {
 
 		// foreach element in the slice of targets provided, check to see if this is what was called by the cli
 		// if so call this function passing in the element as the new target
-		for _, key := range targets.([]interface{}) {
+		for _, key := range target.([]interface{}) {
 			keyType := reflect.TypeOf(key)
 
 			if keyType.Kind() == reflect.Func && functionName(key) == methodTitleName {
@@ -69,6 +96,20 @@ func Fuego(targets interface{}) ([]reflect.Value, error) {
 		printError(err)
 		return nil, err
 	}
+}
+
+// fuegoUsage determines the usage details and prints them to stdout
+func fuegoUsage(target interface{}, helpTarget string) {
+	helpTarget = strings.TrimSpace(helpTarget)
+	targetType := reflect.TypeOf(target)
+	targetVal := reflect.ValueOf(target)
+
+	switch targetType.Kind() {
+	case reflect.Func:
+	case reflect.Ptr, reflect.Struct:
+	case reflect.Array, reflect.Slice:
+	}
+	return
 }
 
 // fuegoFunc is used as a helper function for Fuego() to handle targets of type Func
