@@ -106,9 +106,45 @@ func fuegoUsage(target interface{}, helpTarget string) {
 
 	switch targetType.Kind() {
 	case reflect.Func:
+		// get the target functions name
+		targetFuncName := runtime.FuncForPC(targetVal.Pointer()).Name()
+		targetFuncName = strings.TrimSpace(targetFuncName[strings.LastIndex(targetFuncName, ".")+1:])
+
+		// validate that the user asked for help with this target function or specified no subcommand
+		if helpTarget != "" && strings.ToLower(helpTarget) != strings.ToLower(targetFuncName) {
+			fmt.Printf("%s is not an available subcommand. Here are the details for the available function.\n\n", helpTarget)
+		}
+
+		// print the function signature to understand the parameter types required and expected return type
+		fmt.Printf(targetFuncName)
+		funcStructure := targetVal.Type().String()
+		fmt.Println(" " + funcStructure[strings.Index(funcStructure, "("):])
+
+		// print out paramter types separately
+		targetFuncParamCount := targetVal.Type().NumIn()
+		fmt.Printf("\tParamters: ")
+		if targetFuncParamCount == 0 {
+			fmt.Println("None")
+		}
+		params := fmt.Sprintf("(%s)", funcStructure[strings.Index(funcStructure, "(")+1:strings.Index(funcStructure, ")")])
+		fmt.Println(params)
+
+		// print out return types separately
+		targetFuncReturnCount := targetVal.Type().NumOut()
+		fmt.Printf("\tReturns:   ")
+		if targetFuncReturnCount == 0 {
+			fmt.Println("None")
+		}
+		ret := fmt.Sprintf("%s", funcStructure[strings.Index(funcStructure, ")")+2:])
+		if !strings.Contains(ret, "(") {
+			ret = fmt.Sprintf("(%s)", ret)
+		}
+		fmt.Println(ret)
+
 	case reflect.Ptr, reflect.Struct:
 	case reflect.Array, reflect.Slice:
 	}
+
 	return
 }
 
