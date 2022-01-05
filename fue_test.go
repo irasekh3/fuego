@@ -272,10 +272,10 @@ var (
 		},
 		{
 			"StructAttributeArgument.Success",
-			[]interface{}{&(MyMath{Offset: 5})},
+			[]interface{}{(MyMath{Offset: 5})},
 			[]string{"Fuego.StructAttributeArgument.Success", "MyMath.Add", "5", "3", "--Offset=2"},
-			false,
-			false,
+			true,
+			true,
 			reflect.ValueOf(MyMath{Offset: 0}.Subtract).Type().NumOut(),
 			[]interface{}{float64(10)},
 			nil,
