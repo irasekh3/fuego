@@ -214,6 +214,80 @@ func fuegoPrintWrapper(values []reflect.Value, err error) ([]reflect.Value, erro
 	return values, err
 }
 
+// TypeInfo holds reflection metadata about a given target
+type TypeInfo struct {
+	Kind       reflect.Kind
+	Name       string
+	PkgPath    string
+	NumMethods int
+	IsPtr      bool
+	ElemKind   reflect.Kind // only set when IsPtr is true
+}
+
+// GetTypeInfo uses reflection to introspect a target and return its type metadata
+func GetTypeInfo(target interface{}) TypeInfo {
+	t := reflect.TypeOf(target)
+	info := TypeInfo{
+		Kind:       t.Kind(),
+		Name:       t.Name(),
+		PkgPath:    t.PkgPath(),
+		NumMethods: t.NumMethod(),
+		IsPtr:      t.Kind() == reflect.Ptr,
+	}
+	if info.IsPtr {
+		info.ElemKind = t.Elem().Kind()
+		info.Name = t.Elem().Name()
+		info.PkgPath = t.Elem().PkgPath()
+		info.NumMethods += t.Elem().NumMethod()
+	}
+	return info
+}
+
+// StructFieldInfo holds reflection metadata about a single struct field
+type StructFieldInfo struct {
+	Name      string
+	Type      reflect.Type
+	Kind      reflect.Kind
+	Tag       reflect.StructTag
+	Exported  bool
+	Index     int
+}
+
+// GetStructFields uses reflection to enumerate all fields of a struct (or pointer to struct).
+// Returns an error if the target is not a struct or pointer to struct.
+func GetStructFields(target interface{}) ([]StructFieldInfo, error) {
+	t := reflect.TypeOf(target)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return nil, errors.Errorf("GetStructFields requires a struct or pointer to struct, got %v", t.Kind())
+	}
+
+	fields := make([]StructFieldInfo, t.NumField())
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		fields[i] = StructFieldInfo{
+			Name:     f.Name,
+			Type:     f.Type,
+			Kind:     f.Type.Kind(),
+			Tag:      f.Tag,
+			Exported: f.IsExported(),
+			Index:    i,
+		}
+	}
+	return fields, nil
+}
+
+// IsVariadic uses reflection to determine if a function target accepts variadic arguments
+func IsVariadic(target interface{}) (bool, error) {
+	t := reflect.TypeOf(target)
+	if t.Kind() != reflect.Func {
+		return false, errors.Errorf("IsVariadic requires a func, got %v", t.Kind())
+	}
+	return t.IsVariadic(), nil
+}
+
 // convertStringsToReflectValues converts a list of strings to the desired reflect value so that it can be used as a parameter for a reflective call of a function or to be set as the value of a struct attribute.
 func convertStringsToReflectValues(targetValueKindSlice []reflect.Kind, args []string) ([]reflect.Value, error) {
 
