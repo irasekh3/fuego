@@ -413,6 +413,206 @@ func (m MyMath) Subtract(a float64, b float64) float64 {
 	return a - b - m.Offset
 }
 
+func TestGetTypeInfo(t *testing.T) {
+	tests := []struct {
+		name       string
+		target     interface{}
+		wantKind   reflect.Kind
+		wantName   string
+		wantIsPtr  bool
+		wantMinMethods int
+	}{
+		{
+			name:       "function type",
+			target:     AddInt,
+			wantKind:   reflect.Func,
+			wantName:   "",
+			wantIsPtr:  false,
+			wantMinMethods: 0,
+		},
+		{
+			name:       "struct type",
+			target:     MyMath{Offset: 1.0},
+			wantKind:   reflect.Struct,
+			wantName:   "MyMath",
+			wantIsPtr:  false,
+			wantMinMethods: 2, // Add and Subtract
+		},
+		{
+			name:       "pointer to struct",
+			target:     &MyMath{Offset: 2.0},
+			wantKind:   reflect.Ptr,
+			wantName:   "MyMath",
+			wantIsPtr:  true,
+			wantMinMethods: 2,
+		},
+		{
+			name:       "string type",
+			target:     "hello",
+			wantKind:   reflect.String,
+			wantName:   "string",
+			wantIsPtr:  false,
+			wantMinMethods: 0,
+		},
+		{
+			name:       "int type",
+			target:     42,
+			wantKind:   reflect.Int,
+			wantName:   "int",
+			wantIsPtr:  false,
+			wantMinMethods: 0,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			info := GetTypeInfo(tc.target)
+			if info.Kind != tc.wantKind {
+				t.Errorf("Kind = %v, want %v", info.Kind, tc.wantKind)
+			}
+			if info.Name != tc.wantName {
+				t.Errorf("Name = %v, want %v", info.Name, tc.wantName)
+			}
+			if info.IsPtr != tc.wantIsPtr {
+				t.Errorf("IsPtr = %v, want %v", info.IsPtr, tc.wantIsPtr)
+			}
+			if info.NumMethods < tc.wantMinMethods {
+				t.Errorf("NumMethods = %v, want at least %v", info.NumMethods, tc.wantMinMethods)
+			}
+			if tc.wantIsPtr && info.ElemKind != reflect.Struct {
+				t.Errorf("ElemKind = %v, want %v", info.ElemKind, reflect.Struct)
+			}
+		})
+	}
+}
+
+func TestGetStructFields(t *testing.T) {
+	t.Run("struct value", func(t *testing.T) {
+		fields, err := GetStructFields(MyMath{Offset: 3.14})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(fields) != 1 {
+			t.Fatalf("expected 1 field, got %d", len(fields))
+		}
+		if fields[0].Name != "Offset" {
+			t.Errorf("field name = %v, want Offset", fields[0].Name)
+		}
+		if fields[0].Kind != reflect.Float64 {
+			t.Errorf("field kind = %v, want %v", fields[0].Kind, reflect.Float64)
+		}
+		if !fields[0].Exported {
+			t.Error("expected field to be exported")
+		}
+		if fields[0].Index != 0 {
+			t.Errorf("field index = %v, want 0", fields[0].Index)
+		}
+	})
+
+	t.Run("pointer to struct", func(t *testing.T) {
+		fields, err := GetStructFields(&MyMath{Offset: 1.0})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(fields) != 1 {
+			t.Fatalf("expected 1 field, got %d", len(fields))
+		}
+		if fields[0].Name != "Offset" {
+			t.Errorf("field name = %v, want Offset", fields[0].Name)
+		}
+	})
+
+	t.Run("multi-field struct", func(t *testing.T) {
+		type MultiField struct {
+			Name    string  `json:"name"`
+			Age     int     `json:"age"`
+			Balance float64
+		}
+		fields, err := GetStructFields(MultiField{Name: "test", Age: 25, Balance: 100.0})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(fields) != 3 {
+			t.Fatalf("expected 3 fields, got %d", len(fields))
+		}
+		// Verify struct tags are captured via reflection
+		if string(fields[0].Tag) != `json:"name"` {
+			t.Errorf("tag = %v, want json:\"name\"", fields[0].Tag)
+		}
+		if fields[1].Kind != reflect.Int {
+			t.Errorf("Age kind = %v, want %v", fields[1].Kind, reflect.Int)
+		}
+	})
+
+	t.Run("non-struct error", func(t *testing.T) {
+		_, err := GetStructFields("not a struct")
+		if err == nil {
+			t.Error("expected error for non-struct type")
+		}
+	})
+
+	t.Run("non-struct slice error", func(t *testing.T) {
+		_, err := GetStructFields([]int{1, 2, 3})
+		if err == nil {
+			t.Error("expected error for slice type")
+		}
+	})
+}
+
+func TestIsVariadic(t *testing.T) {
+	variadicFunc := func(args ...int) int {
+		sum := 0
+		for _, a := range args {
+			sum += a
+		}
+		return sum
+	}
+
+	t.Run("variadic function", func(t *testing.T) {
+		result, err := IsVariadic(variadicFunc)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !result {
+			t.Error("expected variadic function to return true")
+		}
+	})
+
+	t.Run("non-variadic function", func(t *testing.T) {
+		result, err := IsVariadic(AddInt)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result {
+			t.Error("expected non-variadic function to return false")
+		}
+	})
+
+	t.Run("method is non-variadic", func(t *testing.T) {
+		result, err := IsVariadic(MyMath.Add)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result {
+			t.Error("expected method to return false")
+		}
+	})
+
+	t.Run("non-func error", func(t *testing.T) {
+		_, err := IsVariadic(42)
+		if err == nil {
+			t.Error("expected error for non-func type")
+		}
+	})
+
+	t.Run("struct error", func(t *testing.T) {
+		_, err := IsVariadic(MyMath{})
+		if err == nil {
+			t.Error("expected error for struct type")
+		}
+	})
+}
+
 func doErrorsMatch(err1 error, err2 error) bool {
 	if err1.Error() == err2.Error() {
 		return true
